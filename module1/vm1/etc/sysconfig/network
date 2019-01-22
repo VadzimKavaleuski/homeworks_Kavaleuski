@@ -1,0 +1,2 @@
+# Created by anaconda
+iptables -t nat -A POSTROUTING -s 192.168.200.2/32 -j MASQUERADE
