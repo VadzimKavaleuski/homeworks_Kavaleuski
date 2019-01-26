@@ -1,0 +1,8 @@
+vi /etc/sysctl.conf
+add "net.ipv4.ip_forward = 1"
+sysctl -p
+systemctl stop firewalld
+systemctl disable firewalld
+yum -y install iptables-services
+vi /etc/sysconfig/network
+add "iptables -t nat -A POSTROUTING -s 192.168.200.2/24 -j SNAT --to 10.0.2.100"
