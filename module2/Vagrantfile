@@ -3,19 +3,18 @@
 
 
 Vagrant.configure("2") do |config|
-
- config.vm.box = "bento/centos-7.5"
- config.vm.define "server1" do |server1|
-  server1.vm.hostname = "server1"
-  server1.vm.network "private_network", ip: "192.168.0.10"
-  server1.vm.provision "shell", inline: <<-SHELL
-     yum info installed git||yum install -y git
-     ls /home/vagrant/homeworks_Kavaleuski||git clone https://github.com/VadzimKavaleuski/homeworks_Kavaleuski.git
-     cd /home/vagrant/homeworks_Kavaleuski
-     git checkout task2
-     cat module2/text.txt
-     cat /etc/hosts|grep server2 >/dev/null|| echo 192.168.0.11 server2 >>/etc/hosts
-   SHELL
+  config.vm.box = "bento/centos-7.5"
+  config.vm.define "server1" do |server1|
+    server1.vm.hostname = "server1"
+    server1.vm.network "private_network", ip: "192.168.0.10"
+    server1.vm.provision "shell", inline: <<-SHELL
+      yum info installed git||yum install -y git
+      ls /home/vagrant/homeworks_Kavaleuski||git clone https://github.com/VadzimKavaleuski/homeworks_Kavaleuski.git
+      cd /home/vagrant/homeworks_Kavaleuski
+      git checkout task2
+      cat module2/text.txt
+      cat /etc/hosts|grep server2 >/dev/null|| echo 192.168.0.11 server2 >>/etc/hosts
+    SHELL
   end
   config.vm.define "server2" do |server2|
     server2.vm.hostname = "server2"
@@ -23,5 +22,4 @@ Vagrant.configure("2") do |config|
     server2.vm.provision :shell, inline: "cat /etc/hosts|grep server1 >/dev/null||echo 192.168.0.10 server1 >>/etc/hosts"
     server2.vm.provision :shell, inline:"ping server1 -c 5"
   end
-
 end
