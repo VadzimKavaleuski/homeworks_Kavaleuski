@@ -14,16 +14,13 @@ Vagrant.configure("2") do |config|
      cd /home/vagrant/homeworks_Kavaleuski
      git checkout task2
      cat module2/text.txt
-     cat /etc/hosts|grep server1|| echo 192.168.0.10 server1 >>/etc/hosts
-     cat /etc/hosts|grep server1|| echo 192.168.0.11 server2 >>/etc/hosts
-#     ping server2 -c 5||cat
+     cat /etc/hosts|grep server2 >/dev/null|| echo 192.168.0.11 server2 >>/etc/hosts
    SHELL
   end
   config.vm.define "server2" do |server2|
     server2.vm.hostname = "server2"
     server2.vm.network "private_network", ip: "192.168.0.11"
-    server2.vm.provision :shell, inline: "cat /etc/hosts|grep server1|| echo 192.168.0.10 server1 >>/etc/hosts"
-    server2.vm.provision :shell, inline: "cat /etc/hosts|grep server2|| echo 192.168.0.11 server1 >>/etc/hosts"
+    server2.vm.provision :shell, inline: "cat /etc/hosts|grep server1 >/dev/null||echo 192.168.0.10 server1 >>/etc/hosts"
     server2.vm.provision :shell, inline:"ping server1 -c 5"
   end
 
