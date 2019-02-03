@@ -1,0 +1,47 @@
+# -*- mode: ruby -*-
+# vi: set ft=ruby :
+Vagrant.configure("2") do |config|
+  TOMCAT_COUNT = 5
+  workers_properties_head="worker.list=lb,status\nworker.status.type=status\nworker.lb.type=lb\nworker.lb.balance_workers="
+  workers_properties_body=""
+  TOMCAT_COUNT.times { |serverid|
+    ip=11+serverid
+    servername="server#{serverid}"
+    config.vm.box = "bento/centos-7.5"
+    config.vm.define "servertc#{serverid}" do |server|
+      server.vm.hostname = servername
+      server.vm.network "private_network", ip: "192.168.0.#{ip}"
+      server.vm.provision "shell", inline: <<-SHELL
+        yum info installed java-1.8.0-openjdk >/dev/null||yum install java-1.8.0-openjdk -y
+        yum info installed tomcat >/dev/null||yum install tomcat -y
+        systemctl stop tomcat
+        ls /var/lib/tomcat/webapps/app 2>/dev/null >/dev/null||mkdir /var/lib/tomcat/webapps/app
+        cp /vagrant/server_tc/index.jsp /var/lib/tomcat/webapps/app/
+        cp -r /vagrant/WEB-INF /var/lib/tomcat/webapps/app/
+        systemctl enable tomcat 
+        systemctl start tomcat 
+      SHELL
+    end
+    if serverid>0
+      workers_properties_head=workers_properties_head+","
+    end
+    workers_properties_head=workers_properties_head+servername
+    workers_properties_body=workers_properties_body+"\n"+"worker."+servername+".host=192.168.0."+ip.to_s+"\n"+"worker."+servername+".port=8009\nworker."+servername+".type=ajp13"
+  }
+  config.vm.define "serverlb" do |serverlb|
+    serverlb.vm.hostname = "serverlb"
+    serverlb.vm.network "private_network", ip: "192.168.0.10"
+    config.vm.network "forwarded_port", guest: 80, host: 80
+    serverlb.vm.provision "shell", inline: <<-SHELL
+      yum info installed httpd >/dev/null||yum install httpd -y
+      systemctl stop httpd
+      ls /etc/httpd/modules|grep mod_jk.so>/dev/null||cp /vagrant/server_lb/mod_jk.so /etc/httpd/modules/
+      echo "#{workers_properties_head}"> /etc/httpd/conf/workers.properties
+      echo "#{workers_properties_body}">> /etc/httpd/conf/workers.properties
+      cp /vagrant/server_lb/mod_jk.conf /etc/httpd/conf.d/
+      cp /vagrant/server_lb/index.html /var/www/html/
+      systemctl enable httpd
+      systemctl start httpd
+    SHELL
+  end
+end
