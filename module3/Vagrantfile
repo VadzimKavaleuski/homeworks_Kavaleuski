@@ -1,0 +1,58 @@
+# -*- mode: ruby -*-
+# vi: set ft=ruby :
+Vagrant.configure("2") do |config|
+  config.vm.box = "bento/centos-7.5"
+  config.vm.define "server3" do |server3|
+    server3.vm.hostname = "server3"
+    server3.vm.network "private_network", ip: "192.168.0.12"
+    server3.vm.provision "shell", inline: <<-SHELL
+      yum info installed java-1.8.0-openjdk >/dev/null||yum install java-1.8.0-openjdk -y
+      yum info installed tomcat >/dev/null||yum install tomcat -y
+      systemctl stop tomcat
+#      sed -i 's/<Engine name="Catalina" defaultHost="localhost">/<Engine name="Catalina" defaultHost="localhost" jvmRoute="server3">/g' /etc/tomcat/server.xml
+      ls /var/lib/tomcat/webapps/app 2>/dev/null >/dev/null||mkdir /var/lib/tomcat/webapps/app
+      cp /vagrant/server3/index.jsp /var/lib/tomcat/webapps/app/
+      cp -r /vagrant/WEB-INF /var/lib/tomcat/webapps/app/
+      ls /var/lib/tomcat/webapps/s3app 2>/dev/null >/dev/null||mkdir /var/lib/tomcat/webapps/s3app
+      cp /vagrant/server3/index.jsp /var/lib/tomcat/webapps/s3app/
+      cp -r /vagrant/WEB-INF /var/lib/tomcat/webapps/s3app/
+      systemctl enable tomcat 
+      systemctl start tomcat 
+    SHELL
+  end
+
+  config.vm.define "server2" do |server2|
+    server2.vm.hostname = "server2"
+    server2.vm.network "private_network", ip: "192.168.0.11"
+    server2.vm.provision "shell", inline: <<-SHELL
+      yum info installed java-1.8.0-openjdk >/dev/null||yum install java-1.8.0-openjdk -y
+      yum info installed tomcat >/dev/null||yum install tomcat -y
+      systemctl stop tomcat
+#      sed -i 's/<Engine name="Catalina" defaultHost="localhost">/<Engine name="Catalina" defaultHost="localhost" jvmRoute="server2">/g' /etc/tomcat/server.xml
+      ls /var/lib/tomcat/webapps/app 2>/dev/null >/dev/null||mkdir /var/lib/tomcat/webapps/app
+      cp /vagrant/server2/index.jsp /var/lib/tomcat/webapps/app/
+      cp -r /vagrant/WEB-INF /var/lib/tomcat/webapps/app/
+      ls /var/lib/tomcat/webapps/s2app 2>/dev/null >/dev/null||mkdir /var/lib/tomcat/webapps/s2app
+      cp /vagrant/server2/index.jsp /var/lib/tomcat/webapps/s2app/
+      cp -r /vagrant/WEB-INF /var/lib/tomcat/webapps/s2app/
+      systemctl enable tomcat 
+      systemctl start tomcat 
+    SHELL
+  end
+
+  config.vm.define "server1" do |server1|
+    server1.vm.hostname = "server1"
+    server1.vm.network "private_network", ip: "192.168.0.10"
+    config.vm.network "forwarded_port", guest: 80, host: 80
+    server1.vm.provision "shell", inline: <<-SHELL
+      yum info installed httpd >/dev/null||yum install httpd -y
+      systemctl stop httpd
+      ls /etc/httpd/modules|grep mod_jk.so>/dev/null||cp /vagrant/server1/mod_jk.so /etc/httpd/modules/
+      cp /vagrant/server1/workers.properties /etc/httpd/conf/
+      cp /vagrant/server1/mod_jk.conf /etc/httpd/conf.d/
+      cp /vagrant/server1/index.html /var/www/html/
+      systemctl enable httpd
+      systemctl start httpd
+    SHELL
+  end
+end
