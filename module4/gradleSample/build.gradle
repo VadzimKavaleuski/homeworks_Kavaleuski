@@ -1,0 +1,46 @@
+plugins {
+    id 'war'
+ }
+war {
+    archiveName ='app.war'
+} 
+
+repositories {
+    mavenCentral()
+}
+dependencies {
+    compile group: 'log4j', name: 'log4j', version: '1.2.17'
+    compile group: 'org.apache.commons', name: 'commons-io', version: '1.3.2'
+}
+task incVersion{
+	doLast {
+		version = "${version != 'unspecified' ? version : '0.0.0'}"
+		version=extract_versionFirst(version)+(Integer.parseInt(extract_versionLast(version))+1)
+		println("new version is "+version)
+        /*	Properties props = new Properties()
+                props.setProperty("version",version)
+                props.store((new File('gradle.properties')).newWriter(), null)
+        */
+		ant.propertyfile(file: "gradle.properties") {
+            		entry( key: "version", value: version)
+        	}
+	}
+}
+
+task updateGreeting{
+	doLast {
+            println("update greeting")
+            File greeting=new File('build/resources/main/greeting.txt')
+            greeting.write(version)
+        }
+}
+classes.dependsOn updateGreeting
+
+String extract_versionLast(String version){
+    def start_ver=version.lastIndexOf(".")+1
+    return version.substring(start_ver,version.size());
+}
+String extract_versionFirst(String version){
+    def start_ver=version.lastIndexOf(".")+1
+    return version.substring(0,start_ver);
+}
