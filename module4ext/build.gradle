@@ -21,6 +21,5 @@ task sorting {
 
     println sortedArray // it should print to console correctly sorted array
     }
-
 }
 
