@@ -1,25 +1,24 @@
 task sorting {
-    doLast {
-        //unsorted array of versions
-        def unsortedArray = [
+  doLast {
+    //unsorted array of versions
+    def unsortedArray = [
             '1.1.3',
             '1.1.0',
             '1.10.2',
             '1.9.1',
             '1.1.8',
             '1.1.15'
-        ]
-            // insert code here to sort array
-        def sortedArray=unsortedArray.toArray().sort{a, b ->
-            ((a.tokenize('.')[0] == b.tokenize('.')[0])&&(a.tokenize('.')[1] == b.tokenize('.')[1])&&(a.tokenize('.')[2] == b.tokenize('.')[2]))
-            ?0:
-                ((a.tokenize('.')[0].toInteger() > b.tokenize('.')[0].toInteger())
-                        ||((a.tokenize('.')[0] == b.tokenize('.')[0])&&(a.tokenize('.')[1].toInteger() > b.tokenize('.')[1].toInteger()))
-                        ||((a.tokenize('.')[0] == b.tokenize('.')[0])&&(a.tokenize('.')[1] == b.tokenize('.')[1])&&(a.tokenize('.')[2].toInteger() > b.tokenize('.')[2].toInteger())))
-                ? 1 :  -1
-            }
-
-    println sortedArray // it should print to console correctly sorted array
+      ]
+    // insert code here to sort array
+    def sortedArray=unsortedArray.toArray().sort{a, b ->
+      ((a.tokenize('.')[0] == b.tokenize('.')[0])&&(a.tokenize('.')[1] == b.tokenize('.')[1])&&(a.tokenize('.')[2] == b.tokenize('.')[2]))
+      ?0:
+        ((a.tokenize('.')[0].toInteger() > b.tokenize('.')[0].toInteger())
+          ||((a.tokenize('.')[0] == b.tokenize('.')[0])&&(a.tokenize('.')[1].toInteger() > b.tokenize('.')[1].toInteger()))
+          ||((a.tokenize('.')[0] == b.tokenize('.')[0])&&(a.tokenize('.')[1] == b.tokenize('.')[1])&&(a.tokenize('.')[2].toInteger() > b.tokenize('.')[2].toInteger())))
+        ? 1 :  -1
     }
+    println sortedArray // it should print to console correctly sorted array
+  }
 }
 
