@@ -1,0 +1,50 @@
+node {
+  stage('Clone sources') {
+    git url: 'https://github.com/VadzimKavaleuski/homeworks_Kavaleuski.git', branch:'task6'
+  }
+  stage('build') {
+    sh 'chmod +rwx ./module4/gradleSample'
+    dir("module4/gradleSample"){
+      sh 'chmod +x ./gradlew'
+      sh './gradlew clean build'
+    }
+  }
+  def version="unknown"
+  stage('public artifact'){
+    version = sh (
+      script: "cat module4/gradleSample/gradle.properties | grep \"version=\" | awk -F \"=\" '{print \$2}'",
+      returnStdout: true
+    ).trim()
+    withCredentials([string(credentialsId: 'cfd264f7-2a2f-40d7-bf13-5febf5ba7b69', variable: 'TOKEN')]) {
+      sh 'curl -X PUT -u $TOKEN -T ./module4/gradleSample/build/libs/app.war "http://localhost:8081/nexus/content/repositories/internalSample/snapshots/test/'+version+'/app.war"' 
+    }   
+  }
+  stage('public to tomcat1'){
+    sh 'curl "http://192.168.0.10/status?cmd=update&from=list&w=lb&sw=server0&vwa=2"' 
+    sshagent(['server0']) {
+      sh 'ssh -o StrictHostKeyChecking=no -l vagrant 192.168.0.11  "sudo systemctl stop tomcat"'
+      sh 'ssh -o StrictHostKeyChecking=no -l vagrant 192.168.0.11  "ls /var/lib/tomcat/webapps|grep app.war 2>/dev/null&&sudo rm /var/lib/tomcat/webapps/app.war 2>/dev/null"'
+      sh 'ssh -o StrictHostKeyChecking=no -l vagrant 192.168.0.11  "ls /var/lib/tomcat/webapps|grep app 2>/dev/null&&sudo rm -r /var/lib/tomcat/webapps/app 2>/dev/null"'
+      sh 'ssh -o StrictHostKeyChecking=no -l vagrant 192.168.0.11  "sudo curl -o \"/var/lib/tomcat/webapps/app.war\" \"http://192.168.0.100:8081/nexus/content/repositories/internalSample/snapshots/test/'+version+'/app.war\""'
+      sh 'ssh -o StrictHostKeyChecking=no -l vagrant 192.168.0.11  "sudo systemctl start tomcat"'
+      sleep 5
+    }
+    sh 'curl "http://192.168.0.11:8080/app/index.jsp" 2>/dev/null | grep "'+version+'" >/dev/null || exit' 
+    sh 'curl "http://192.168.0.10/status?cmd=update&from=list&w=lb&sw=server0&vwa=0"' 
+  }
+  stage('public to tomcat2'){
+    sh 'curl "http://192.168.0.10/status?cmd=update&from=list&w=lb&sw=server1&vwa=2"' 
+    sshagent(['ba9ddb2a-38a0-4ca5-8ae7-dde5d3ab28be']) {
+      sh 'ssh -o StrictHostKeyChecking=no -l vagrant 192.168.0.12  "sudo systemctl stop tomcat"'
+      sh 'ssh -o StrictHostKeyChecking=no -l vagrant 192.168.0.12  "ls /var/lib/tomcat/webapps|grep app.war 2>/dev/null&&sudo rm /var/lib/tomcat/webapps/app.war 2>/dev/null"'
+      sh 'ssh -o StrictHostKeyChecking=no -l vagrant 192.168.0.12  "ls /var/lib/tomcat/webapps|grep app 2>/dev/null&&sudo rm -r /var/lib/tomcat/webapps/app 2>/dev/null"'
+      sh 'ssh -o StrictHostKeyChecking=no -l vagrant 192.168.0.12  "sudo curl -o \"/var/lib/tomcat/webapps/app.war\" \"http://192.168.0.100:8081/nexus/content/repositories/internalSample/snapshots/test/'+version+'/app.war\""'
+      sh 'ssh -o StrictHostKeyChecking=no -l vagrant 192.168.0.12  "sudo systemctl start tomcat"'
+      sleep 5
+    }
+    sh 'curl "http://192.168.0.12:8080/app/index.jsp" 2>/dev/null | grep "'+version+'" >/dev/null || exit' 
+    sh 'curl "http://192.168.0.10/status?cmd=update&from=list&w=lb&sw=server1&vwa=0"' 
+  }
+  //clear workspace
+  deleteDir()
+}
