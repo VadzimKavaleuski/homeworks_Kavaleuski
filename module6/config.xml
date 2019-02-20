@@ -1,0 +1,84 @@
+<?xml version='1.1' encoding='UTF-8'?>
+<flow-definition plugin="workflow-job@2.31">
+  <actions/>
+  <description>test</description>
+  <keepDependencies>false</keepDependencies>
+  <properties>
+    <org.jenkinsci.plugins.workflow.job.properties.DisableConcurrentBuildsJobProperty/>
+    <com.coravy.hudson.plugins.github.GithubProjectProperty plugin="github@1.29.3">
+      <projectUrl>https://github.com/VadzimKavaleuski/homeworks_Kavaleuski.git/</projectUrl>
+      <displayName>task6</displayName>
+    </com.coravy.hudson.plugins.github.GithubProjectProperty>
+    <jenkins.model.BuildDiscarderProperty>
+      <strategy class="hudson.tasks.LogRotator">
+        <daysToKeep>2</daysToKeep>
+        <numToKeep>10</numToKeep>
+        <artifactDaysToKeep>-1</artifactDaysToKeep>
+        <artifactNumToKeep>-1</artifactNumToKeep>
+      </strategy>
+    </jenkins.model.BuildDiscarderProperty>
+    <org.jenkinsci.plugins.workflow.job.properties.PipelineTriggersJobProperty>
+      <triggers>
+        <hudson.triggers.SCMTrigger>
+          <spec>* * * * *</spec>
+          <ignorePostCommitHooks>false</ignorePostCommitHooks>
+        </hudson.triggers.SCMTrigger>
+      </triggers>
+    </org.jenkinsci.plugins.workflow.job.properties.PipelineTriggersJobProperty>
+  </properties>
+  <definition class="org.jenkinsci.plugins.workflow.cps.CpsFlowDefinition" plugin="workflow-cps@2.63">
+    <script>node {
+  stage(&apos;Clone sources&apos;) {
+    git url: &apos;https://github.com/VadzimKavaleuski/homeworks_Kavaleuski.git&apos;, branch:&apos;task6&apos;
+  }
+  stage(&apos;build&apos;) {
+    sh &apos;chmod +rwx ./module4/gradleSample&apos;
+    dir(&quot;module4/gradleSample&quot;){
+      sh &apos;chmod +x ./gradlew&apos;
+      sh &apos;./gradlew clean build&apos;
+    }
+  }
+  def version=&quot;unknown&quot;
+  stage(&apos;public artifact&apos;){
+    version = sh (
+      script: &quot;cat module4/gradleSample/gradle.properties | grep \&quot;version=\&quot; | awk -F \&quot;=\&quot; &apos;{print \$2}&apos;&quot;,
+      returnStdout: true
+    ).trim()
+    withCredentials([string(credentialsId: &apos;cfd264f7-2a2f-40d7-bf13-5febf5ba7b69&apos;, variable: &apos;TOKEN&apos;)]) {
+      sh &apos;curl -X PUT -u $TOKEN -T ./module4/gradleSample/build/libs/app.war &quot;http://localhost:8081/nexus/content/repositories/internalSample/snapshots/test/&apos;+version+&apos;/app.war&quot;&apos; 
+    }   
+  }
+  stage(&apos;public to tomcat1&apos;){
+    sh &apos;curl &quot;http://192.168.0.10/status?cmd=update&amp;from=list&amp;w=lb&amp;sw=server0&amp;vwa=2&quot;&apos; 
+    sshagent([&apos;server0&apos;]) {
+      sh &apos;ssh -o StrictHostKeyChecking=no -l vagrant 192.168.0.11  &quot;sudo systemctl stop tomcat&quot;&apos;
+      sh &apos;ssh -o StrictHostKeyChecking=no -l vagrant 192.168.0.11  &quot;ls /var/lib/tomcat/webapps|grep app.war 2&gt;/dev/null&amp;&amp;sudo rm /var/lib/tomcat/webapps/app.war 2&gt;/dev/null&quot;&apos;
+      sh &apos;ssh -o StrictHostKeyChecking=no -l vagrant 192.168.0.11  &quot;ls /var/lib/tomcat/webapps|grep app 2&gt;/dev/null&amp;&amp;sudo rm -r /var/lib/tomcat/webapps/app 2&gt;/dev/null&quot;&apos;
+      sh &apos;ssh -o StrictHostKeyChecking=no -l vagrant 192.168.0.11  &quot;sudo curl -o \&quot;/var/lib/tomcat/webapps/app.war\&quot; \&quot;http://192.168.0.100:8081/nexus/content/repositories/internalSample/snapshots/test/&apos;+version+&apos;/app.war\&quot;&quot;&apos;
+      sh &apos;ssh -o StrictHostKeyChecking=no -l vagrant 192.168.0.11  &quot;sudo systemctl start tomcat&quot;&apos;
+      sleep 5
+    }
+    sh &apos;curl &quot;http://192.168.0.11:8080/app/index.jsp&quot; 2&gt;/dev/null | grep &quot;&apos;+version+&apos;&quot; &gt;/dev/null || exit&apos; 
+    sh &apos;curl &quot;http://192.168.0.10/status?cmd=update&amp;from=list&amp;w=lb&amp;sw=server0&amp;vwa=0&quot;&apos; 
+  }
+  stage(&apos;public to tomcat2&apos;){
+    sh &apos;curl &quot;http://192.168.0.10/status?cmd=update&amp;from=list&amp;w=lb&amp;sw=server1&amp;vwa=2&quot;&apos; 
+    sshagent([&apos;ba9ddb2a-38a0-4ca5-8ae7-dde5d3ab28be&apos;]) {
+      sh &apos;ssh -o StrictHostKeyChecking=no -l vagrant 192.168.0.12  &quot;sudo systemctl stop tomcat&quot;&apos;
+      sh &apos;ssh -o StrictHostKeyChecking=no -l vagrant 192.168.0.12  &quot;ls /var/lib/tomcat/webapps|grep app.war 2&gt;/dev/null&amp;&amp;sudo rm /var/lib/tomcat/webapps/app.war 2&gt;/dev/null&quot;&apos;
+      sh &apos;ssh -o StrictHostKeyChecking=no -l vagrant 192.168.0.12  &quot;ls /var/lib/tomcat/webapps|grep app 2&gt;/dev/null&amp;&amp;sudo rm -r /var/lib/tomcat/webapps/app 2&gt;/dev/null&quot;&apos;
+      sh &apos;ssh -o StrictHostKeyChecking=no -l vagrant 192.168.0.12  &quot;sudo curl -o \&quot;/var/lib/tomcat/webapps/app.war\&quot; \&quot;http://192.168.0.100:8081/nexus/content/repositories/internalSample/snapshots/test/&apos;+version+&apos;/app.war\&quot;&quot;&apos;
+      sh &apos;ssh -o StrictHostKeyChecking=no -l vagrant 192.168.0.12  &quot;sudo systemctl start tomcat&quot;&apos;
+      sleep 5
+    }
+    sh &apos;curl &quot;http://192.168.0.12:8080/app/index.jsp&quot; 2&gt;/dev/null | grep &quot;&apos;+version+&apos;&quot; &gt;/dev/null || exit&apos; 
+    sh &apos;curl &quot;http://192.168.0.10/status?cmd=update&amp;from=list&amp;w=lb&amp;sw=server1&amp;vwa=0&quot;&apos; 
+  }
+  //clear workspace
+  deleteDir()
+}</script>
+    <sandbox>true</sandbox>
+  </definition>
+  <triggers/>
+  <disabled>false</disabled>
+</flow-definition>
