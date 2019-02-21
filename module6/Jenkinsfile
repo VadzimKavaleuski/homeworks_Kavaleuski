@@ -6,7 +6,7 @@ node {
     sh 'chmod +rwx ./module4/gradleSample'
     dir("module4/gradleSample"){
       sh 'chmod +x ./gradlew'
-      sh './gradlew clean build'
+      sh './gradlew clean iV build'
     }
   }
   def version="unknown"
@@ -20,30 +20,44 @@ node {
     }   
   }
   stage('public to tomcat1'){
-    sh 'curl "http://192.168.0.10/status?cmd=update&from=list&w=lb&sw=server0&vwa=2"' 
+    httpRequest "http://192.168.0.10/status?cmd=update&from=list&w=lb&sw=server0&vwa=2"
     sshagent(['server0']) {
       sh 'ssh -o StrictHostKeyChecking=no -l vagrant 192.168.0.11  "sudo systemctl stop tomcat"'
       sh 'ssh -o StrictHostKeyChecking=no -l vagrant 192.168.0.11  "ls /var/lib/tomcat/webapps|grep app.war 2>/dev/null&&sudo rm /var/lib/tomcat/webapps/app.war 2>/dev/null"'
       sh 'ssh -o StrictHostKeyChecking=no -l vagrant 192.168.0.11  "ls /var/lib/tomcat/webapps|grep app 2>/dev/null&&sudo rm -r /var/lib/tomcat/webapps/app 2>/dev/null"'
       sh 'ssh -o StrictHostKeyChecking=no -l vagrant 192.168.0.11  "sudo curl -o \"/var/lib/tomcat/webapps/app.war\" \"http://192.168.0.100:8081/nexus/content/repositories/internalSample/snapshots/test/'+version+'/app.war\""'
       sh 'ssh -o StrictHostKeyChecking=no -l vagrant 192.168.0.11  "sudo systemctl start tomcat"'
-      sleep 5
+      sleep 8
     }
     sh 'curl "http://192.168.0.11:8080/app/index.jsp" 2>/dev/null | grep "'+version+'" >/dev/null || exit' 
-    sh 'curl "http://192.168.0.10/status?cmd=update&from=list&w=lb&sw=server0&vwa=0"' 
+    httpRequest "http://192.168.0.10/status?cmd=update&from=list&w=lb&sw=server0&vwa=0"
   }
   stage('public to tomcat2'){
-    sh 'curl "http://192.168.0.10/status?cmd=update&from=list&w=lb&sw=server1&vwa=2"' 
+    httpRequest "http://192.168.0.10/status?cmd=update&from=list&w=lb&sw=server1&vwa=2"
     sshagent(['ba9ddb2a-38a0-4ca5-8ae7-dde5d3ab28be']) {
-      sh 'ssh -o StrictHostKeyChecking=no -l vagrant 192.168.0.12  "sudo systemctl stop tomcat"'
-      sh 'ssh -o StrictHostKeyChecking=no -l vagrant 192.168.0.12  "ls /var/lib/tomcat/webapps|grep app.war 2>/dev/null&&sudo rm /var/lib/tomcat/webapps/app.war 2>/dev/null"'
-      sh 'ssh -o StrictHostKeyChecking=no -l vagrant 192.168.0.12  "ls /var/lib/tomcat/webapps|grep app 2>/dev/null&&sudo rm -r /var/lib/tomcat/webapps/app 2>/dev/null"'
-      sh 'ssh -o StrictHostKeyChecking=no -l vagrant 192.168.0.12  "sudo curl -o \"/var/lib/tomcat/webapps/app.war\" \"http://192.168.0.100:8081/nexus/content/repositories/internalSample/snapshots/test/'+version+'/app.war\""'
-      sh 'ssh -o StrictHostKeyChecking=no -l vagrant 192.168.0.12  "sudo systemctl start tomcat"'
-      sleep 5
+      sh 'ssh -o StrictHostKeyChecking=no -l vagrant 192.168.0.12  "curl -o \"/home/vagrant/app.war\" \"http://192.168.0.100:8081/nexus/content/repositories/internalSample/snapshots/test/'+version+'/app.war\""'
+      withCredentials([string(credentialsId: 'tomcatsAdminCred', variable: 'tomcatsAdminCred')]) {
+        sh 'ssh -o StrictHostKeyChecking=no -l vagrant 192.168.0.12  "curl \"http://$tomcatsAdminCred@localhost:8080/manager/text/undeploy?path=/app\" 2>/dev/null"'
+        sh 'ssh -o StrictHostKeyChecking=no -l vagrant 192.168.0.12  "curl -X PUT -T \"/home/vagrant/app.war\" \"http://$tomcatsAdminCred@localhost:8080/manager/text/deploy?path=/app\" 2>/dev/null"'
+      }      
     }
     sh 'curl "http://192.168.0.12:8080/app/index.jsp" 2>/dev/null | grep "'+version+'" >/dev/null || exit' 
-    sh 'curl "http://192.168.0.10/status?cmd=update&from=list&w=lb&sw=server1&vwa=0"' 
+    httpRequest "http://192.168.0.10/status?cmd=update&from=list&w=lb&sw=server1&vwa=0"
+  }
+  stage('push git'){
+    sh 'git config user.email "vadzim_kavaleuski@epam.com"'
+    sh 'git config user.name "jenkins job"'
+    sh 'git add module4/gradleSample/gradle.properties'
+    sh 'git commit -m "increase version by jenkins job"'
+    withCredentials([string(credentialsId: 'github', variable: 'TOKEN')]) {
+     sh("git push --set-upstream https://$TOKEN@github.com/VadzimKavaleuski/homeworks_Kavaleuski.git task6")
+    }   
+    sh 'git checkout master'
+    sh 'git merge task6'
+    sh 'git tag -a "v'+version+'" -m "version '+version+'"'
+    withCredentials([string(credentialsId: 'github', variable: 'TOKEN')]) {
+     sh("git push --tag --set-upstream https://$TOKEN@github.com/VadzimKavaleuski/homeworks_Kavaleuski.git")
+    }   
   }
   //clear workspace
   deleteDir()
