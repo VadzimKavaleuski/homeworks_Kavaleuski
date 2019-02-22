@@ -1,6 +1,7 @@
 node {
   stage('Clone sources') {
-    git url: 'https://github.com/VadzimKavaleuski/homeworks_Kavaleuski.git', branch:'task6'
+    git url: 'https://github.com/VadzimKavaleuski/homeworks_Kavaleuski.git'
+    sh 'git checkout task6'
   }
   stage('build') {
     sh 'chmod +rwx ./module4/gradleSample'
@@ -49,13 +50,16 @@ node {
     sh 'git config user.name "jenkins job"'
     sh 'git add module4/gradleSample/gradle.properties'
     sh 'git commit -m "increase version by jenkins job"'
+    sh 'git pull origin task6'
     withCredentials([string(credentialsId: 'github', variable: 'TOKEN')]) {
      sh("git push --set-upstream https://$TOKEN@github.com/VadzimKavaleuski/homeworks_Kavaleuski.git task6")
     }   
     sh 'git checkout master'
-    sh 'git merge task6'
+    sh 'git merge --ff task6 -m "merge task6 to master"'
     sh 'git tag -a "v'+version+'" -m "version '+version+'"'
+    sh 'git pull origin master '
     withCredentials([string(credentialsId: 'github', variable: 'TOKEN')]) {
+     sh("git push --set-upstream https://$TOKEN@github.com/VadzimKavaleuski/homeworks_Kavaleuski.git")
      sh("git push --tag --set-upstream https://$TOKEN@github.com/VadzimKavaleuski/homeworks_Kavaleuski.git")
     }   
   }
