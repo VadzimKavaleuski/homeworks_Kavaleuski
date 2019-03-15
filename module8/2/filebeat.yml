@@ -1,0 +1,15 @@
+filebeat:
+  prospectors:
+  - type: log
+    paths:
+    - /var/log/*.log
+    - /var/log/httpd/*
+output:
+  logstash:
+    enabled: true
+#    worker: 1
+    hosts: ["logstash:5044"]
+    tags: ["test","filebeat"]
+#    ssl:
+#      verification_mode: 'none'
+

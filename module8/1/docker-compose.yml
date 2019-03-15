@@ -1,0 +1,42 @@
+version: '3'
+networks:
+  grafana_test: 
+    driver: bridge
+services: 
+  http:
+    image: collectd 
+    hostname: http  
+    build:
+      context: .
+      dockerfile: collectd.Dockerfile
+    networks:
+      - grafana_test
+    volumes:
+      - ./:/opt/share:rw
+  influxdb_grafana:
+    hostname: influxdb  
+    build:
+      context: .
+      dockerfile: influxdb.Dockerfile
+    networks:
+      - grafana_test
+    volumes:
+      - ./influxdb_storage:/var/lib/influxdb:rw
+#      - ./grafana_storage:/var/lib/grafana:rw
+#      - ./grafana_work_storage:/usr/share/grafana:rw
+      - ./grafana_data:/opt/grafana-6.0.1/data:rw
+      - ./:/opt/share:rw
+    expose:
+      - 8086
+      - 25826
+      - 3000
+    ports:
+      - 3000:3000
+#    restart: unless-stopped
+volumes:
+  influxdb_storage:
+  grafana_data:
+      
+#  grafana_storage:
+#  grafana_work_storage:    
+ 
