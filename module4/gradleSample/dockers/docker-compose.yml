@@ -1,0 +1,62 @@
+version: '3'
+networks:
+  elk_test: 
+    driver: bridge
+services: 
+  tomcatservice:
+    hostname: httpd  
+    user: root
+    build:
+      context: .
+      dockerfile: httpd/Dockerfile
+    ports:
+      - 80:80  
+    networks:
+      - elk_test
+
+  logstash:
+    image: docker.elastic.co/logstash/logstash-oss:6.6.1   
+    hostname: logstash
+    build:
+      context: .
+      dockerfile: logstash/Dockerfile    
+    networks:
+      - elk_test
+    ports:
+      - 5044:5044
+      - 9600:9600
+
+  elasticsearch:
+    image: docker.elastic.co/elasticsearch/elasticsearch-oss:6.6.1
+    hostname: elasticsearch
+    build:
+      context: .
+      dockerfile: elasticsearch/Dockerfile    
+    volumes:
+     - ./elasticsearch/config/elasticsearch.yml:/usr/share/elasticsearch/config/elasticsearch.yml:ro
+#     - ./:/opt/share:rw
+    ports:
+      - 9300:9300
+      - 9200:9200
+    environment:
+      ES_JAVA_OPTS: "-Xmx256m -Xms256m"
+      ELASTIC_PASSWORD: youpassword
+    networks:
+     - elk_test
+     
+  kibana:
+    image: docker.elastic.co/kibana/kibana-oss:6.6.1
+    hostname: kibana
+    environment:
+      ELASTICSEARCH_URL: http://elasticsearch:9200
+      ELASTICSEARCH_USERNAME: elastic
+      ELASTICSEARCH_PASSWORD: youpassword
+      logging.dest: /var/log/kibana.log
+#    volumes:
+#      - ./:/opt/share:rw
+    ports:
+      - 5601:5601
+    networks:
+      - elk_test
+    depends_on:
+      - elasticsearch
