@@ -1,0 +1,41 @@
+node {
+  stage('Clone sources') {
+    git url: 'https://github.com/VadzimKavaleuski/homeworks_Kavaleuski.git', branch:'task7ext'
+  }
+  stage('build') {
+    sh 'chmod +rwx ./module4/gradleSample'
+    dir("module4/gradleSample"){
+      sh 'chmod +x ./gradlew'
+      sh './gradlew clean build'
+    }
+  }
+  def version="unknown"
+  stage('public artifact'){
+    version = sh (
+      script: "cat module4/gradleSample/gradle.properties | grep \"version=\" | awk -F \"=\" '{print \$2}'",
+      returnStdout: true
+    ).trim()
+    withCredentials([string(credentialsId: 'cfd264f7-2a2f-40d7-bf13-5febf5ba7b69', variable: 'TOKEN')]) {
+      sh 'curl -X PUT -u $TOKEN -T ./module4/gradleSample/build/libs/app.war "http://localhost:8081/nexus/content/repositories/internalSample/snapshots/test/'+version+'/app.war"' 
+    }   
+  }
+  stage('build tomcat container'){
+    dir("module4/gradleSample/dockers"){
+      sh 'docker build -f tomcat.Dockerfile . --tag gradlesample/tomcat --build-arg version='+version
+      sh 'docker image tag gradlesample/tomcat localhost:5000/gradlesample/tomcat:'+version
+   }      
+  }
+    stage('build load balancer container'){
+    dir("module4/gradleSample/dockers"){
+      sh 'docker build -f httpd.Dockerfile . --tag gradlesample/httpd'
+      sh 'docker image tag gradlesample/httpd localhost:5000/gradlesample/httpd:'+version
+    }      
+  }
+  
+  
+  
+  
+  // осталось добавить swarm
+  clear workspace
+  deleteDir()
+}
