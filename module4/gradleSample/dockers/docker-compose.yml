@@ -1,39 +1,26 @@
-version: '3'
-
+version: "3"
 services:
-  tomcat1:
-    image: localhost:5000/gradlesample/tomcat:1.0.34
-    hostname:tomacat1
-    networks:
-      - testnet
+  arg:  
+    version: "1.0.34"
+  task7ext:
+    # replace username/repo:tag with your name and image details
+    image: localhost:5000/gradlesample/tomcat:${version}
+    build:
+       context: "."
+       dockerfile: collectd.Dockerfile
+       args:
+         version: "1.0.34"
     deploy:
-      mode: replicated
-      replicas: 2
-      placement:
-        constraints:
-          - 'node.role==worker'
-  tomcat2:
-    image: localhost:5000/gradlesample/tomcat:1.0.34
-    hostname:tomacat2
+      replicas: 5
+      resources:
+        limits:
+          cpus: "0.1"
+          memory: 50M
+      restart_policy:
+        condition: on-failure
+    ports:
+      - "80:8080"
     networks:
-      - testnet
-    deploy:
-      mode: replicated
-      replicas: 2
-      placement:
-        constraints:
-          - 'node.role==worker'
-  htppd:
-    image: localhost:5000/gradlesample/httpd:1.0.34
-    networks:
-      - testnet
-    deploy:
-      mode: replicated
-      replicas: 2
-      placement:
-        constraints:
-          - 'node.role==worker'
-
+      - webnet
 networks:
-  testnet:
-    external: true
+  webnet:
