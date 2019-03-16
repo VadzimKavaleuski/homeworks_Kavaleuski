@@ -1,14 +1,13 @@
 version: "3"
 services:
-  arg:  
-    version: "1.0.34"
+
   task7ext:
     image: localhost:5000/gradlesample/tomcat:${version}
     build:
        context: "."
        dockerfile: collectd.Dockerfile
-#       args:
-#         version: "1.0.34"
+       args:
+         version: "1.0.34"
     deploy:
       replicas: 5
       resources:
@@ -23,3 +22,5 @@ services:
       - webnet
 networks:
   webnet:
+environment: 
+  version: "1.0.34"
