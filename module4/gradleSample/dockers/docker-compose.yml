@@ -1,9 +1,8 @@
 version: "3"
 services:
-  arg:  
-    version: "1.0.34"
+#  arg:  
+#    version: "1.0.34"
   task7ext:
-    # replace username/repo:tag with your name and image details
     image: localhost:5000/gradlesample/tomcat:${version}
     build:
        context: "."
