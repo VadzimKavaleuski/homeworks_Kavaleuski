@@ -3,7 +3,7 @@ services:
   task7ext:
     image: localhost:5000/gradlesample/tomcat:${TAG}
     deploy:
-      replicas: 5
+      replicas: 1
       resources:
         limits:
           cpus: "0.1"
