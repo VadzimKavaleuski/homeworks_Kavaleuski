@@ -16,6 +16,3 @@ services:
       - webnet
 networks:
   webnet:
-env_file: .env
-environment: 
-  TAG: "1.0.34"
