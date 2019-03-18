@@ -1,6 +1,6 @@
 version: "3"
 services:
-  task7ext:
+  tomcat:
     image: localhost:5000/gradlesample/tomcat:${TAG}
     deploy:
       replicas: 2
