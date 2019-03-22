@@ -1,7 +1,7 @@
 include_recipe "yumupdate"
 package "docker" do
-action :install
+  action :install
 end
 service 'docker' do 
-action [ :enable, :start ]
+  action [ :enable, :start ]
 end
