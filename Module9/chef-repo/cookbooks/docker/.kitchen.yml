@@ -19,7 +19,7 @@ platforms:
 suites:
   - name: default
     run_list:
-      - recipe[first_cookbook::default]
+      - recipe[docker::default]
     verifier:
       inspec_tests:
         - test/integration/default
