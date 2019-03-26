@@ -15,10 +15,6 @@ execute "remove local image nginx" do
   command "docker rmi nginx"
   not_if 'docker ps|grep "localhost:5000/nginx"'
 end
-#execute "remove local image localhost:5000/nginx" do
-#  command "docker rmi localhost:5000/nginx"
-#  not_if 'docker ps|grep "localhost:5000/nginx"'
-#end
 execute "start nginx" do
   command "docker run -d -p 8080:80 localhost:5000/nginx"
   not_if 'docker ps|grep "localhost:5000/nginx"'
