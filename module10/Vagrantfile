@@ -1,0 +1,80 @@
+# -*- mode: ruby -*-
+# vi: set ft=ruby :
+Vagrant.configure("2") do |config|
+  config.vm.box = "bento/centos-7.5"
+  config.vm.define "chef" do |chef|
+    chef.vm.hostname = "chef"
+    chef.vm.network "private_network", ip: "192.168.0.211"
+    chef.vm.provision "shell", inline: <<-SHELL
+      sudo cp /vagrant/hosts /etc/hosts
+      sudo rpm -Uvh /vagrant/chef-server-core-12.19.31-1.el7.x86_64.rpm
+      sudo chef-server-ctl install chef-manage 
+      echo chef-server-ctl reconfigure
+      sudo chef-server-ctl reconfigure 
+      echo chef-manage-ctl reconfigure
+      sudo chef-manage-ctl reconfigure --accept-license
+      sudo chef-server-ctl user-create vadimka Vadim Kavaleuski vadim_spam@mail.ru 'vadimka' --filename /vagrant/vadimka.pem
+      sudo chef-server-ctl org-create rd-epam 'RD EPAM' --association_user vadimka --filename /vagrant/rd-epam.pem
+    SHELL
+  end
+  config.vm.define "docker" do |docker|
+    docker.vm.hostname = "docker"
+    docker.vm.network "private_network", ip: "192.168.0.214"
+    docker.vm.provision "shell", inline: <<-SHELL
+      sudo cp /vagrant/hosts /etc/hosts
+      sudo mkdir "/etc/chef"
+      sudo cp /vagrant/client.rb /etc/chef/client.rb
+      sudo cp /vagrant/rd-epam.pem /etc/chef/rd-epam-validator.pem
+      sudo rpm -Uvh /vagrant/chef-14.11.21-1.el7.x86_64.rpm
+      sudo echo 'export PATH="/opt/chef/embedded/bin:$PATH"' >> ~/.configuration_file && source ~/.configuration_file
+      sudo cp /vagrant/nginx.repo  /etc/yum.repos.d/
+      sudo yum install -y nginx
+      sudo cp /vagrant/default.conf  /etc/nginx/conf.d/
+      sudo systemctl enable nginx 2>/dev/null
+      sudo systemctl restart nginx
+      sudo chef-client -d 30 -i 300 -c /etc/chef/client.rb
+    SHELL
+  end  
+  config.vm.define "jenkins" do |jenkins|
+    jenkins.vm.hostname = "jenkins"
+    jenkins.vm.network "private_network", ip: "192.168.0.213"
+    jenkins.vm.provision "shell", inline: <<-SHELL
+      sudo cp /vagrant/hosts /etc/hosts
+      sudo mkdir "/etc/chef"
+      sudo cp /vagrant/client.rb /etc/chef/client.rb
+      sudo cp /vagrant/rd-epam.pem /etc/chef/rd-epam-validator.pem
+      sudo rpm -Uvh /vagrant/chef-14.11.21-1.el7.x86_64.rpm
+      sudo echo 'export PATH="/opt/chef/embedded/bin:$PATH"' >> ~/.configuration_file && source ~/.configuration_file
+      cp /vagrant/.vagrant/machines/docker/virtualbox/private_key /home/vagrant/.ssh/docker
+      sudo echo "Host docker\n	GSSAPIAuthentication yes\nIdentityFile= /home/vagrant/.ssh/docker" >>/etc/ssh/ssh_config 
+      sudo chef-client -d 30 -i 300 -c /etc/chef/client.rb
+    SHELL
+  end  
+    config.vm.define "chefDK" do |chefDK|
+    chefDK.vm.hostname = "chefDK"
+    chefDK.vm.network "private_network", ip: "192.168.0.212"
+    chefDK.vm.provision "shell", inline: <<-SHELL
+      sudo cp /vagrant/hosts /etc/hosts
+      sudo yum install -y git
+      sudo rpm -Uvh /vagrant/chefdk-3.8.14-1.el7.x86_64.rpm
+      sudo echo 'export PATH="/opt/chef/embedded/bin:$PATH"' >> ~/.configuration_file && source ~/.configuration_file
+      chef generate repo chef-repo
+      sudo mkdir -p chef-repo/.chef
+      cp /vagrant/knife.rb chef-repo/.chef/knife.rb
+      cp /vagrant/vadimka.pem chef-repo/.chef/vadimka.pem
+      cd chef-repo/
+      git config --global user.email "vadimka@rd-epam.com"
+      git config --global user.name "VadimKA"
+      git add .
+      git commit -m "start init"
+      knife supermarket install jenkins
+      knife supermarket install chefdk
+      knife supermarket install git
+      knife supermarket install docker
+      cp /vagrant/repo/* ./cookbooks/ -r
+      knife upload cookbooks chef-repo/ *
+      knife node run_list add jenkins 'recipe[git],recipe[jenkins::java],recipe[jenkins::_master_package],recipe[chefdk]'
+      knife node run_list add docker 'recipe[docker],recipe[docker-registry],recipe[mytomcat]'
+    SHELL
+  end
+end

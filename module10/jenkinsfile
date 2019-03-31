@@ -1,0 +1,38 @@
+node {
+  stage('Clone sources') {
+    git url: 'https://github.com/VadzimKavaleuski/homeworks_Kavaleuski.git', branch:'task10'
+  }
+  stage('change tomcat atribute') {
+    sh 'echo "node.default[\'tomcatapp\'][\'image\'][\'name\']=\'tomcat_app\'\nnode.default[\'tomcatapp\'][\'image\'][\'tag\']=\'1\' >module10/repo/attributes.default.rb"' 
+  }
+  stage('push to chef') {
+
+       sh 'cp /vagrant/knife.rb chef-repo/.chef/knife.rb'
+       sh 'cp /vagrant/vadimka.pem chef-repo/.chef/vadimka.pem'
+       sh 'cd chef-repo/'
+       sh ' git config --global user.email "vadimka@rd-epam.com"'
+       sh 'git config --global user.name "VadimKA"'
+       sh 'git add .'
+       sh 'git commit -m "start init" '
+       sh 'knife upload cookbooks *'
+       
+  }
+  stage('push to chef') {
+
+       sh 'cp /vagrant/knife.rb chef-repo/.chef/knife.rb'
+       sh 'cp /vagrant/vadimka.pem chef-repo/.chef/vadimka.pem'
+       sh 'cd chef-repo/'
+       sh ' git config --global user.email "vadimka@rd-epam.com"'
+       sh 'git config --global user.name "VadimKA"'
+       sh 'git add .'
+       sh 'git commit -m "start init" '
+       sh 'knife upload cookbooks *'
+       
+  }
+  
+    stage('push to git') {
+       sh 'git push -set-upstream https://github.com/VadzimKavaleuski/homeworks_Kavaleuski.git '
+       sh 'knife ssh "sudo chef-client" -x vagrant --sudo'
+  }
+
+}

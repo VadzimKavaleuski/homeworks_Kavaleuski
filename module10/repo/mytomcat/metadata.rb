@@ -1,0 +1,8 @@
+name 'mytomcat'
+maintainer 'The Authors'
+maintainer_email 'you@example.com'
+license 'All Rights Reserved'
+description 'Installs/Configures mytomcat'
+long_description 'Installs/Configures mytomcat'
+version '0.1.2'
+chef_version '>= 13.0'
