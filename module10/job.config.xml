@@ -1,0 +1,81 @@
+<?xml version='1.1' encoding='UTF-8'?>
+<flow-definition plugin="workflow-job@2.32">
+  <actions/>
+  <description></description>
+  <keepDependencies>false</keepDependencies>
+  <properties>
+    <com.coravy.hudson.plugins.github.GithubProjectProperty plugin="github@1.29.4">
+      <projectUrl>https://github.com/VadzimKavaleuski/homeworks_Kavaleuski.git/</projectUrl>
+      <displayName>main</displayName>
+    </com.coravy.hudson.plugins.github.GithubProjectProperty>
+    <hudson.model.ParametersDefinitionProperty>
+      <parameterDefinitions>
+        <jp.ikedam.jenkins.plugins.extensible__choice__parameter.ExtensibleChoiceParameterDefinition plugin="extensible-choice-parameter@1.6.0">
+          <name>IMAGE_TAG</name>
+          <description>версия образа</description>
+          <editable>false</editable>
+          <editableType>NoFilter</editableType>
+          <choiceListProvider class="jp.ikedam.jenkins.plugins.extensible_choice_parameter.SystemGroovyChoiceListProvider">
+            <groovyScript plugin="script-security@1.56">
+              <script>import groovy.json.JsonSlurper
+def parser = new JsonSlurper()
+def jsonText=new URL(&quot;http://insecure-registries:5000/v2/tomcat_app/tags/list&quot;).getText()
+return parser.parseText(jsonText).tags
+</script>
+              <sandbox>true</sandbox>
+            </groovyScript>
+            <usePredefinedVariables>false</usePredefinedVariables>
+          </choiceListProvider>
+        </jp.ikedam.jenkins.plugins.extensible__choice__parameter.ExtensibleChoiceParameterDefinition>
+      </parameterDefinitions>
+    </hudson.model.ParametersDefinitionProperty>
+  </properties>
+  <definition class="org.jenkinsci.plugins.workflow.cps.CpsFlowDefinition" plugin="workflow-cps@2.65">
+    <script>node {
+  stage(&apos;Clone sources&apos;) {
+    git url: &apos;https://github.com/VadzimKavaleuski/homeworks_Kavaleuski.git&apos;, branch:&apos;task10&apos;
+  }
+  stage(&apos;change tomcat atribute&apos;) {
+      def prop=new File(pwd()+&quot;/module10/repo/mytomcat/attributes/default.rb&quot;)
+      prop.write(&quot;# create by jenkins job &quot;+(new Date()).format(&quot;dd/MM/yyyy HH:mm:ss&quot;)+&quot;\n&quot;
+               +&quot;node.default[&apos;tomcatapp&apos;][&apos;image&apos;][&apos;name&apos;]=&apos;tomcat_app&apos;\n&quot;
+               +&quot;node.default[&apos;tomcatapp&apos;][&apos;image&apos;][&apos;tag&apos;]=&apos;${IMAGE_TAG}&apos;&quot;)
+  }
+  stage(&apos;push to chef&apos;) {
+       sh &apos;rm -r chef-repo&apos;
+       sh &apos;chef generate repo chef-repo&apos;
+       sh &apos;mkdir -p chef-repo/.chef&apos;
+       sh &apos;cp /vagrant/knife.rb chef-repo/.chef/knife.rb&apos;
+       sh &apos;cp /vagrant/vadimka.pem chef-repo/.chef/vadimka.pem&apos;
+       sh &apos;cp module10/repo/mytomcat chef-repo/cookbooks/ -r&apos;
+    dir(&apos;chef-repo&apos;){
+       sh &apos;git config --global user.email &quot;vadimka@rd-epam.com&quot;&apos;
+       sh &apos;git config --global user.name &quot;VadimKA&quot;&apos;
+       sh &apos;git add .&apos;
+       sh &apos;git commit -m &quot;start init&quot; &apos;
+       sh &apos;knife upload cookbooks mytomcat&apos;
+    }  
+  }
+    stage(&apos;push to git&apos;) {
+        sh &apos;git config --global user.email &quot;vadimka@rd-epam.com&quot;&apos;
+        sh &apos;git config --global user.name &quot;VadimKA&quot;&apos;
+        sh &apos;git add module10/repo/mytomcat/attributes/default.rb&apos;
+        sh &apos;git commit -m &quot;commit change to tomcat recipes&quot;&apos;
+        withCredentials([string(credentialsId: &apos;gitusername&apos;, variable: &apos;gitusername&apos;),string(credentialsId: &apos;gitpassword&apos;, variable: &apos;gitpassword&apos;)]){
+          sh(&quot;git push https://${gitusername}:${gitpassword}@github.com/VadzimKavaleuski/homeworks_Kavaleuski.git HEAD:task10&quot;)  
+        }
+    }
+    
+    stage(&apos;start chef-client&apos;) {
+      withCredentials([usernamePassword(credentialsId: &apos;docker-ssh&apos;, passwordVariable: &apos;password&apos;, usernameVariable: &apos;userName&apos;)]) {
+        dir(&apos;chef-repo&apos;){
+          sh &apos;knife ssh &quot;name:docker&quot; -x ${password} -P ${userName} &quot;sudo chef-client&quot;&apos;
+        }
+      }
+    }
+}</script>
+    <sandbox>false</sandbox>
+  </definition>
+  <triggers/>
+  <disabled>false</disabled>
+</flow-definition>

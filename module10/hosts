@@ -1,7 +1,7 @@
-127.0.0.1	Docker	Docker
 127.0.0.1   localhost localhost.localdomain localhost4 localhost4.localdomain4
 ::1         localhost localhost.localdomain localhost6 localhost6.localdomain6
 192.168.0.211 chef
 192.168.0.212 chefDK
-192.168.0.213 docker
-192.168.0.214 jenkins
+192.168.0.214 docker
+192.168.0.213 jenkins
+192.168.0.214 insecure-registries

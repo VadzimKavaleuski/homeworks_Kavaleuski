@@ -23,7 +23,7 @@ Vagrant.configure("2") do |config|
     docker.vm.provision "shell", inline: <<-SHELL
       sudo cp /vagrant/hosts /etc/hosts
       sudo mkdir "/etc/chef"
-      sudo cp /vagrant/client.rb /etc/chef/client.rb
+      sudo cp /vagrant/client_docker.rb /etc/chef/client.rb
       sudo cp /vagrant/rd-epam.pem /etc/chef/rd-epam-validator.pem
       sudo rpm -Uvh /vagrant/chef-14.11.21-1.el7.x86_64.rpm
       sudo echo 'export PATH="/opt/chef/embedded/bin:$PATH"' >> ~/.configuration_file && source ~/.configuration_file

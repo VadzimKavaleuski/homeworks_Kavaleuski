@@ -3,36 +3,41 @@ node {
     git url: 'https://github.com/VadzimKavaleuski/homeworks_Kavaleuski.git', branch:'task10'
   }
   stage('change tomcat atribute') {
-    sh 'echo "node.default[\'tomcatapp\'][\'image\'][\'name\']=\'tomcat_app\'\nnode.default[\'tomcatapp\'][\'image\'][\'tag\']=\'1\' >module10/repo/attributes.default.rb"' 
+    def prop=new File(pwd()+"/module10/repo/mytomcat/attributes/default.rb")
+    prop.write("# create by jenkins job "+(new Date()).format("dd/MM/yyyy HH:mm:ss")+"\n"
+               +"node.default['tomcatapp']['image']['name']='tomcat_app'\n"
+               +"node.default['tomcatapp']['image']['tag']='${IMAGE_TAG}'")
   }
   stage('push to chef') {
-
-       sh 'cp /vagrant/knife.rb chef-repo/.chef/knife.rb'
-       sh 'cp /vagrant/vadimka.pem chef-repo/.chef/vadimka.pem'
-       sh 'cd chef-repo/'
-       sh ' git config --global user.email "vadimka@rd-epam.com"'
-       sh 'git config --global user.name "VadimKA"'
-       sh 'git add .'
-       sh 'git commit -m "start init" '
-       sh 'knife upload cookbooks *'
-       
+    sh 'rm -r chef-repo'
+    sh 'chef generate repo chef-repo'
+    sh 'mkdir -p chef-repo/.chef'
+    sh 'cp /vagrant/knife.rb chef-repo/.chef/knife.rb'
+    sh 'cp /vagrant/vadimka.pem chef-repo/.chef/vadimka.pem'
+    sh 'cp module10/repo/mytomcat chef-repo/cookbooks/ -r'
+    dir('chef-repo'){
+      sh 'git config --global user.email "vadimka@rd-epam.com"'
+      sh 'git config --global user.name "VadimKA"'
+      sh 'git add .'
+      sh 'git commit -m "start init" '
+      sh 'knife upload cookbooks mytomcat'
+    }  
   }
-  stage('push to chef') {
-
-       sh 'cp /vagrant/knife.rb chef-repo/.chef/knife.rb'
-       sh 'cp /vagrant/vadimka.pem chef-repo/.chef/vadimka.pem'
-       sh 'cd chef-repo/'
-       sh ' git config --global user.email "vadimka@rd-epam.com"'
-       sh 'git config --global user.name "VadimKA"'
-       sh 'git add .'
-       sh 'git commit -m "start init" '
-       sh 'knife upload cookbooks *'
-       
+  stage('push to git') {
+    sh 'git config --global user.email "vadimka@rd-epam.com"'
+    sh 'git config --global user.name "VadimKA"'
+    sh 'git add module10/repo/mytomcat/attributes/default.rb'
+    sh 'git commit -m "commit change to tomcat recipes"'
+    withCredentials([string(credentialsId: 'gitusername', variable: 'gitusername'),string(credentialsId: 'gitpassword', variable: 'gitpassword')]){
+      sh("git push https://${gitusername}:${gitpassword}@github.com/VadzimKavaleuski/homeworks_Kavaleuski.git HEAD:task10")  
+    }
   }
-  
-    stage('push to git') {
-       sh 'git push -set-upstream https://github.com/VadzimKavaleuski/homeworks_Kavaleuski.git '
-       sh 'knife ssh "sudo chef-client" -x vagrant --sudo'
-  }
-
+    
+    stage('start chef-client') {
+      withCredentials([usernamePassword(credentialsId: 'docker-ssh', passwordVariable: 'password', usernameVariable: 'userName')]) {
+        dir('chef-repo'){
+          sh 'knife ssh "name:docker" -x ${password} -P ${userName} "sudo chef-client"'
+        }
+      }
+    }
 }
