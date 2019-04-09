@@ -1,0 +1,4 @@
+import groovy.json.JsonSlurper
+def parser = new JsonSlurper()
+def jsonText=new URL("http://insecure-registries:5000/v2/tomcat_app/tags/list").getText()
+return parser.parseText(jsonText).tags

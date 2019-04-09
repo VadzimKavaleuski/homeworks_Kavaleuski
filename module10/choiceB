@@ -1,0 +1,8 @@
+import groovy.json.JsonSlurper 
+def cmd = "knife environment list -F json -c/vagrant/knife.rb"
+def proc = cmd.execute()
+proc.waitFor()  
+def json=proc.in.text
+def parser = new JsonSlurper()
+def arrlist= parser.parseText(json)
+return arrlist

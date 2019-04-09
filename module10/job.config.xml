@@ -10,28 +10,63 @@
     </com.coravy.hudson.plugins.github.GithubProjectProperty>
     <hudson.model.ParametersDefinitionProperty>
       <parameterDefinitions>
-        <jp.ikedam.jenkins.plugins.extensible__choice__parameter.ExtensibleChoiceParameterDefinition plugin="extensible-choice-parameter@1.6.0">
+        <org.biouno.unochoice.ChoiceParameter plugin="uno-choice@2.1">
           <name>IMAGE_TAG</name>
-          <description>версия образа</description>
-          <editable>false</editable>
-          <editableType>NoFilter</editableType>
-          <choiceListProvider class="jp.ikedam.jenkins.plugins.extensible_choice_parameter.SystemGroovyChoiceListProvider">
-            <groovyScript plugin="script-security@1.56">
+          <description></description>
+          <randomName>choice-parameter-9776575936384</randomName>
+          <visibleItemCount>1</visibleItemCount>
+          <script class="org.biouno.unochoice.model.GroovyScript">
+            <secureScript plugin="script-security@1.56">
               <script>import groovy.json.JsonSlurper
 def parser = new JsonSlurper()
 def jsonText=new URL(&quot;http://insecure-registries:5000/v2/tomcat_app/tags/list&quot;).getText()
-return parser.parseText(jsonText).tags
-</script>
-              <sandbox>true</sandbox>
-            </groovyScript>
-            <usePredefinedVariables>false</usePredefinedVariables>
-          </choiceListProvider>
-        </jp.ikedam.jenkins.plugins.extensible__choice__parameter.ExtensibleChoiceParameterDefinition>
+return parser.parseText(jsonText).tags</script>
+              <sandbox>false</sandbox>
+            </secureScript>
+            <secureFallbackScript plugin="script-security@1.56">
+              <script></script>
+              <sandbox>false</sandbox>
+            </secureFallbackScript>
+          </script>
+          <projectName>testPipeline</projectName>
+          <choiceType>PT_SINGLE_SELECT</choiceType>
+          <filterable>false</filterable>
+          <filterLength>1</filterLength>
+        </org.biouno.unochoice.ChoiceParameter>
+        <org.biouno.unochoice.ChoiceParameter plugin="uno-choice@2.1">
+          <name>ENV</name>
+          <description></description>
+          <randomName>choice-parameter-22229558292484</randomName>
+          <visibleItemCount>1</visibleItemCount>
+          <script class="org.biouno.unochoice.model.GroovyScript">
+            <secureScript plugin="script-security@1.56">
+              <script>import groovy.json.JsonSlurper 
+def cmd = &quot;knife environment list -F json -c/vagrant/knife.rb&quot;
+def proc = cmd.execute()
+proc.waitFor()  
+def json=proc.in.text
+def parser = new JsonSlurper()
+def arrlist= parser.parseText(json)
+return arrlist</script>
+              <sandbox>false</sandbox>
+            </secureScript>
+            <secureFallbackScript plugin="script-security@1.56">
+              <script></script>
+              <sandbox>false</sandbox>
+            </secureFallbackScript>
+          </script>
+          <projectName>testPipeline</projectName>
+          <choiceType>PT_SINGLE_SELECT</choiceType>
+          <filterable>false</filterable>
+          <filterLength>1</filterLength>
+        </org.biouno.unochoice.ChoiceParameter>
       </parameterDefinitions>
     </hudson.model.ParametersDefinitionProperty>
   </properties>
   <definition class="org.jenkinsci.plugins.workflow.cps.CpsFlowDefinition" plugin="workflow-cps@2.65">
-    <script>node {
+    <script>import groovy.json.JsonSlurper 
+node {
+
   stage(&apos;Clone sources&apos;) {
     git url: &apos;https://github.com/VadzimKavaleuski/homeworks_Kavaleuski.git&apos;, branch:&apos;task10&apos;
   }
@@ -41,6 +76,10 @@ return parser.parseText(jsonText).tags
                +&quot;node.default[&apos;tomcatapp&apos;][&apos;image&apos;][&apos;name&apos;]=&apos;tomcat_app&apos;\n&quot;
                +&quot;node.default[&apos;tomcatapp&apos;][&apos;image&apos;][&apos;tag&apos;]=&apos;${IMAGE_TAG}&apos;&quot;)
   }
+  
+ 
+    
+  
   stage(&apos;push to chef&apos;) {
        sh &apos;rm -r chef-repo&apos;
        sh &apos;chef generate repo chef-repo&apos;
@@ -56,6 +95,23 @@ return parser.parseText(jsonText).tags
        sh &apos;knife upload cookbooks mytomcat&apos;
     }  
   }
+  
+   stage(&apos;Change enviroment&apos;){
+    dir(&apos;chef-repo&apos;){       
+        def jsonEnv=sh returnStdout:true, script: &quot;knife environment show $ENV -F json&quot;
+        properties=readJSON text: jsonEnv;
+        
+        properties.default_attributes.tomcatapp_image_tag=&quot;${IMAGE_TAG}&quot;
+        properties.name=&quot;task10_enviroment&quot;
+        writeJSON file: &quot;task10${ENV}.json&quot;, json: properties
+        sh &quot;knife environment from file task10${ENV}.json&quot;
+    }
+   }
+  
+  
+  
+  
+  
     stage(&apos;push to git&apos;) {
         sh &apos;git config --global user.email &quot;vadimka@rd-epam.com&quot;&apos;
         sh &apos;git config --global user.name &quot;VadimKA&quot;&apos;

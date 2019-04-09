@@ -1,13 +1,17 @@
+import groovy.json.JsonSlurper 
 node {
+
   stage('Clone sources') {
     git url: 'https://github.com/VadzimKavaleuski/homeworks_Kavaleuski.git', branch:'task10'
   }
+ 
   stage('change tomcat atribute') {
     def prop=new File(pwd()+"/module10/repo/mytomcat/attributes/default.rb")
     prop.write("# create by jenkins job "+(new Date()).format("dd/MM/yyyy HH:mm:ss")+"\n"
-               +"node.default['tomcatapp']['image']['name']='tomcat_app'\n"
-               +"node.default['tomcatapp']['image']['tag']='${IMAGE_TAG}'")
+      +"node.default['tomcatapp']['image']['name']='tomcat_app'\n"
+      +"node.default['tomcatapp']['image']['tag']='${IMAGE_TAG}'")
   }
+    
   stage('push to chef') {
     sh 'rm -r chef-repo'
     sh 'chef generate repo chef-repo'
@@ -23,6 +27,18 @@ node {
       sh 'knife upload cookbooks mytomcat'
     }  
   }
+  
+  stage('Change enviroment'){
+    dir('chef-repo'){       
+      def jsonEnv=sh returnStdout:true, script: "knife environment show $ENV -F json"
+      properties=readJSON text: jsonEnv;
+      properties.default_attributes.tomcatapp_image_tag="${IMAGE_TAG}"
+      properties.name="task10_enviroment"
+      writeJSON file: "task10${ENV}.json", json: properties
+      sh "knife environment from file task10${ENV}.json"
+    }
+   }
+  
   stage('push to git') {
     sh 'git config --global user.email "vadimka@rd-epam.com"'
     sh 'git config --global user.name "VadimKA"'
@@ -33,11 +49,11 @@ node {
     }
   }
     
-    stage('start chef-client') {
-      withCredentials([usernamePassword(credentialsId: 'docker-ssh', passwordVariable: 'password', usernameVariable: 'userName')]) {
-        dir('chef-repo'){
-          sh 'knife ssh "name:docker" -x ${password} -P ${userName} "sudo chef-client"'
-        }
+  stage('start chef-client') {
+    withCredentials([usernamePassword(credentialsId: 'docker-ssh', passwordVariable: 'password', usernameVariable: 'userName')]) {
+      dir('chef-repo'){
+        sh 'knife ssh "name:docker" -x ${password} -P ${userName} "sudo chef-client"'
       }
     }
+  }
 }

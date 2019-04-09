@@ -1,0 +1,1 @@
+{"name":"task10_enviroment","description":"The default Chef environment","cookbook_versions":{},"json_class":"Chef::Environment","chef_type":"environment","default_attributes":{"tomcatapp_image_tag":{"bytes":[49],"strings":["",""],"valueCount":1,"values":["1"]}},"override_attributes":{}}
