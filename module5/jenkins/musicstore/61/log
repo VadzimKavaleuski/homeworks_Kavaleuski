@@ -1,0 +1,84 @@
+Started by user [8mha:////4FFT5ugBCHhS9G5YouyD2jYUaHVqC3oOK7Xog2U9GSEmAAAAmR+LCAAAAAAAAP9b85aBtbiIQTGjNKU4P08vOT+vOD8nVc83PyU1x6OyILUoJzMv2y+/JJUBAhiZGBgqihhk0NSjKDWzXb3RdlLBUSYGJk8GtpzUvPSSDB8G5tKinBIGIZ+sxLJE/ZzEvHT94JKizLx0a6BxUmjGOUNodHsLgAz2EgZe/dLi1CL9ssSUzNzsRACR/7MxwgAAAA==[0mvadimka
+Building in workspace C:\Program Files (x86)\Jenkins\workspace\musicstore
+[WS-CLEANUP] Deleting project workspace...
+[WS-CLEANUP] Deferred wipeout is used...
+[WS-CLEANUP] Done
+No credentials specified
+Cloning the remote Git repository
+Cloning repository https://github.com/VadzimKavaleuski/homeworks_Kavaleuski.git
+ > git.exe init C:\Program Files (x86)\Jenkins\workspace\musicstore # timeout=10
+Fetching upstream changes from https://github.com/VadzimKavaleuski/homeworks_Kavaleuski.git
+ > git.exe --version # timeout=10
+ > git.exe fetch --tags --force --progress https://github.com/VadzimKavaleuski/homeworks_Kavaleuski.git +refs/heads/*:refs/remotes/origin/*
+ > git.exe config remote.origin.url https://github.com/VadzimKavaleuski/homeworks_Kavaleuski.git # timeout=10
+ > git.exe config --add remote.origin.fetch +refs/heads/*:refs/remotes/origin/* # timeout=10
+ > git.exe config remote.origin.url https://github.com/VadzimKavaleuski/homeworks_Kavaleuski.git # timeout=10
+Fetching upstream changes from https://github.com/VadzimKavaleuski/homeworks_Kavaleuski.git
+ > git.exe fetch --tags --force --progress https://github.com/VadzimKavaleuski/homeworks_Kavaleuski.git +refs/heads/*:refs/remotes/origin/*
+ > git.exe rev-parse "refs/remotes/origin/task5^{commit}" # timeout=10
+ > git.exe rev-parse "refs/remotes/origin/origin/task5^{commit}" # timeout=10
+Checking out Revision 619f23f22f8d9115d6060a63dd2c74a5f17129cb (refs/remotes/origin/task5)
+ > git.exe config core.sparsecheckout # timeout=10
+ > git.exe checkout -f 619f23f22f8d9115d6060a63dd2c74a5f17129cb
+Commit message: "try to found 403"
+ > git.exe rev-list --no-walk 619f23f22f8d9115d6060a63dd2c74a5f17129cb # timeout=10
+[musicstore] $ cmd /c call C:\Windows\TEMP\jenkins5723685954075273111.bat
+
+C:\Program Files (x86)\Jenkins\workspace\musicstore>cd module5/MusicStoreTest 
+
+C:\Program Files (x86)\Jenkins\workspace\musicstore\module5\MusicStoreTest>dotnet publish --framework netcoreapp2.0 --output musicstore --configuration release 
+Microsoft (R) Build Engine version 15.3.409.57025 for .NET Core
+Copyright (C) Microsoft Corporation. All rights reserved.
+
+  MusicStore.E2ETests -> C:\Program Files (x86)\Jenkins\workspace\musicstore\module5\MusicStoreTest\test\MusicStore.E2ETests\bin\Release\netcoreapp2.0\MusicStore.E2ETests.dll
+  MusicStore -> C:\Program Files (x86)\Jenkins\workspace\musicstore\module5\MusicStoreTest\samples\MusicStore\bin\Release\netcoreapp2.0\MusicStore.dll
+  MusicStore.E2ETests -> C:\Program Files (x86)\Jenkins\workspace\musicstore\module5\MusicStoreTest\test\MusicStore.E2ETests\musicstore\
+  MusicStore -> C:\Program Files (x86)\Jenkins\workspace\musicstore\module5\MusicStoreTest\samples\MusicStore\musicstore\
+  MusicStore.Test -> C:\Program Files (x86)\Jenkins\workspace\musicstore\module5\MusicStoreTest\test\MusicStore.Test\bin\Release\netcoreapp2.0\MusicStore.Test.dll
+  MusicStore.Test -> C:\Program Files (x86)\Jenkins\workspace\musicstore\module5\MusicStoreTest\test\MusicStore.Test\musicstore\
+
+C:\Program Files (x86)\Jenkins\workspace\musicstore\module5\MusicStoreTest>octo pack --id musicstore --version 1.1.61 --basePath samples/MusicStore/bin/Release/netcoreapp2.0 
+Packing musicstore version "1.1.61"...
+Saving "musicstore.1.1.61.nupkg" to "C:\Program Files (x86)\Jenkins\workspace\musicstore\module5\MusicStoreTest"...
+Done.
+
+C:\Program Files (x86)\Jenkins\workspace\musicstore\module5\MusicStoreTest>Octo.exe push --package musicstore.1.1.61.nupkg --replace-existing --server http://localhost/ --apiKey API-BNGFXIYQEEBSMRUOSSDWKUAPGY 
+Octopus Deploy Command Line Tool, version 6.2.3
+
+Detected automation environment: "Jenkins"
+Space name unspecified, process will run in the default space context
+Handshaking with Octopus Server: http://localhost/
+Handshake successful. Octopus version: 2019.3.0; API version: 3.0.0
+Authenticated as: vadimka <vadim_spam@mail.ru> 
+Pushing package: C:\Program Files (x86)\Jenkins\workspace\musicstore\module5\MusicStoreTest\musicstore.1.1.61.nupkg...
+Requesting signature for delta compression from the server for upload of a package with id 'musicstore' and version '1.1.61'
+Calculating delta
+The delta file (87ÿ233 bytes) is 34,20 % the size of the orginal file (255ÿ040 bytes), uploading...
+Delta transfer completed
+Push successful
+
+C:\Program Files (x86)\Jenkins\workspace\musicstore\module5\MusicStoreTest>Octo.exe create-release --project musicstore --version 1.1.61 --packageversion 1.1.61 --server http://localhost/ --apiKey API-BNGFXIYQEEBSMRUOSSDWKUAPGY --releaseNotes "Jenkins build [61]" --packageVersion 1.1.61 --channel=musicstore 
+Octopus Deploy Command Line Tool, version 6.2.3
+
+Detected automation environment: "Jenkins"
+Space name unspecified, process will run in the default space context
+Handshaking with Octopus Server: http://localhost/
+Handshake successful. Octopus version: 2019.3.0; API version: 3.0.0
+Authenticated as: vadimka <vadim_spam@mail.ru> 
+This Octopus Server supports channels
+Finding project: musicstore
+Building release plan for channel 'musicstore'...
+Finding deployment process...
+Finding release template...
+Using version number provided on command-line: 1.1.61
+Release plan for musicstore 1.1.61
+Channel: 'musicstore' (this is the default channel)
+  #   Name            Version   Source           Version rules      
+  --- --------------- --------- ---------------- -------------------
+  1   deploy to iss   1.1.61    User specified   Allow any version  
+
+Creating release...
+Release 1.1.61 created successfully!
+
+C:\Program Files (x86)\Jenkins\workspace\musicstore\module5\MusicStoreTest>exit 0 
+Finished: SUCCESS
